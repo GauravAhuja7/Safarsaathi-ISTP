@@ -11,7 +11,7 @@
 - Each task has an **owner** (suggested), **estimated time**, and **done criteria**
 - Tasks within a phase can be parallelized unless marked `[BLOCKS NEXT]`
 - Mark each task done in your project tracker when the done criteria is met, not when you "think it's done"
-- If a task takes 2x estimated time, flag it immediately -- don't silently slip
+- If a task takes 2x estimated time, flag it immediately -- don't silently sl
 
 ---
 

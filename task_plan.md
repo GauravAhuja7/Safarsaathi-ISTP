@@ -33,7 +33,7 @@ Steps:
 
 **Done:** All 4 members can push to `dev`. `main` is protected.
 
----
+
 
 ### Task 0.2 — Set Up Local Dev Environment (Each Team Member)
 **Owner:** All | **Time:** 1 hour per person

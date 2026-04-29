@@ -1,0 +1,40 @@
+export const ROUTE_META = {
+  parashar: {
+    slug: "parashar",
+    name: "Mandi → Parashar Lake",
+    nameHi: "मंडी → पराशर झील",
+    distance: "50–63 km",
+    altitude: "2,730m",
+    lastConnectivity: "Baggi Village (~km 40)",
+    monsoonNote: "Road past Baggi washed out frequently. Call Baggi Dhaba before the last 10 km.",
+    monsoonNoteHi: "बग्गी के आगे रास्ता अक्सर बह जाता है। आखिरी 10 km से पहले बग्गी ढाबे को कॉल करें।",
+    altitudeNote: "You gain 2,000m elevation in ~2 hours. Rest on arrival. Drink water.",
+    altitudeNoteHi: "~2 घंटे में 2,000m ऊंचाई बढ़ती है। पहुंचने पर आराम करें। पानी पिएं।",
+  },
+  barot: {
+    slug: "barot",
+    name: "Mandi → Barot Valley",
+    nameHi: "मंडी → बरोट घाटी",
+    distance: "65 km",
+    altitude: "1,800m",
+    lastConnectivity: "Ghatasani (~km 30)",
+    monsoonNote: "Uhl River floods. Last 35 km is narrow single-lane along gorge — dangerous in rain.",
+    monsoonNoteHi: "उहल नदी में बाढ़ आती है। आखिरी 35 km संकरी एकल-लेन सड़क — बारिश में खतरनाक।",
+    altitudeNote: "Moderate altitude. Low AMS risk. Stay hydrated.",
+    altitudeNoteHi: "मध्यम ऊंचाई। AMS का खतरा कम। पानी पीते रहें।",
+  },
+  "kullu-manali": {
+    slug: "kullu-manali",
+    name: "Mandi → Kullu / Manali (NH-3)",
+    nameHi: "मंडी → कुल्लू / मनाली (NH-3)",
+    distance: "110–170 km",
+    altitude: "2,050m (Manali)",
+    lastConnectivity: "Pandoh / Aut",
+    monsoonNote: "Pandoh–Aut stretch is extremely landslide-prone. NH was closed for 3 consecutive days in Aug 2025.",
+    monsoonNoteHi: "पंडोह–आउट खंड भूस्खलन के लिए बहुत खतरनाक। अगस्त 2025 में NH 3 दिन बंद रहा।",
+    altitudeNote: "Rohtang / Solang at 3,900m+ — don't go to Rohtang on your first day at Manali.",
+    altitudeNoteHi: "रोहतांग/सोलांग 3,900m+ — मनाली पहुंचने के पहले दिन रोहतांग न जाएं।",
+  },
+};
+
+export const ROUTE_SLUGS = ["parashar", "barot", "kullu-manali"];

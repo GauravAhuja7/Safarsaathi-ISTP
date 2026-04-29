@@ -1,0 +1,12 @@
+fastapi==0.136.1
+uvicorn[standard]==0.46.0
+sqlalchemy[asyncio]==2.0.49
+asyncpg==0.31.0
+httpx==0.28.1
+beautifulsoup4==4.14.3
+redis[asyncio]==7.4.0
+apscheduler==3.11.2
+python-dotenv==1.2.2
+pydantic-settings==2.14.0
+lxml==6.1.0
+aiosqlite==0.22.0

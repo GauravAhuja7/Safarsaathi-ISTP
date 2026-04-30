@@ -16,8 +16,8 @@ logger = logging.getLogger(__name__)
 HP_PWD_BASE = "https://hppwd.hp.gov.in"
 
 PWD_PAGES = [
-    f"{HP_PWD_BASE}",  # Homepage — has news/press releases
-    f"{HP_PWD_BASE}/news",  # News section if available
+    f"{HP_PWD_BASE}",                        # Homepage
+    f"{HP_PWD_BASE}/news-press-releases",    # Correct news URL (not /news — that 404s)
 ]
 
 HEADERS = {

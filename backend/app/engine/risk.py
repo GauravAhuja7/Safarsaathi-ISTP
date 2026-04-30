@@ -78,21 +78,25 @@ def _alerts_score(alerts: list[OfficialAlert]) -> tuple[int, str, bool]:
     return max_score, "; ".join(reasons), False
 
 
-def _reporter_score(recent_reports: list[ReporterReport]) -> tuple[int, str]:
-    """Return (score 0-3, description) from recent (< 24h) reports."""
+def _reporter_score(recent_reports: list[ReporterReport]) -> tuple[int, str, bool]:
+    """Return (score 0-3, description, is_blocked). is_blocked triggers auto-HIGH."""
     if not recent_reports:
-        return 1, "No recent reporter updates (uncertainty penalty)"
+        return 1, "No recent reporter updates (uncertainty penalty)", False
 
     # Prioritize the most recent report
     latest = min(recent_reports, key=lambda r: r.hours_old())
 
     if latest.condition == "blocked":
-        return 3, f"Road blocked (reporter, {latest.hours_old():.0f}h ago)"
+        age = latest.hours_old()
+        # Reports < 2h old: auto-HIGH. Older: still high score but no auto-override.
+        if age < 2:
+            return 3, f"Road reported BLOCKED by local contact ({age:.0f}h ago)", True
+        return 3, f"Road reported blocked ({age:.0f}h ago — verify before travel)", False
     if latest.condition == "rough":
-        return 1, f"Road open but rough (reporter, {latest.hours_old():.0f}h ago)"
+        return 1, f"Road open but rough (reporter, {latest.hours_old():.0f}h ago)", False
     if latest.condition == "clear":
-        return 0, f"Road clear (reporter, {latest.hours_old():.0f}h ago)"
-    return 1, f"Conditions reported ({latest.hours_old():.0f}h ago)"
+        return 0, f"Road clear (reporter, {latest.hours_old():.0f}h ago)", False
+    return 1, f"Conditions reported ({latest.hours_old():.0f}h ago)", False
 
 
 def _time_score(hour: int) -> tuple[int, str]:
@@ -131,7 +135,7 @@ def calculate_risk(
     """
     w_score, w_reason = _weather_score(weather)
     a_score, a_reason, road_closed = _alerts_score(alerts)
-    r_score, r_reason = _reporter_score(recent_reports)
+    r_score, r_reason, reporter_blocked = _reporter_score(recent_reports)
     t_score, t_reason = _time_score(current_hour)
     static = ROUTE_STATIC_RISK.get(route_slug, 0)
     base_score = SEASONAL_BASE_SCORE[baseline.risk_level]
@@ -143,6 +147,15 @@ def calculate_risk(
             score=23,
             baseline=baseline.risk_level,
             reason=a_reason,
+        )
+
+    # Auto-HIGH: fresh (< 2h) reporter "blocked" report
+    if reporter_blocked:
+        return RiskResult(
+            level="HIGH",
+            score=20,
+            baseline=baseline.risk_level,
+            reason=r_reason,
         )
 
     total = base_score + w_score + a_score + r_score + t_score + static

@@ -3,9 +3,9 @@ import { NavLink } from "react-router-dom";
 const NAV = [
   { to: "/",          icon: "🗺️",  label: "रास्ते",      end: true },
   { to: "/checklist", icon: "✅",  label: "चेकलिस्ट" },
-  { to: "/altitude",  icon: "⛰️",  label: "ऊंचाई" },
   { to: "/emergency", icon: "🆘",  label: "आपातकाल" },
   { to: "/map",       icon: "📍",  label: "नक्शा" },
+  { to: "/report",    icon: "📢",  label: "रिपोर्ट" },
 ];
 
 export default function NavBar() {

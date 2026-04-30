@@ -31,6 +31,7 @@ class RiskResponse(BaseModel):
     weather_hours_old: float | None
     weather_is_fresh: bool
     latest_report: str | None
+    report_photo_url: str | None
     report_hours_old: float | None
     nearest_hospital_name: str | None
     nearest_hospital_phone: str | None
@@ -165,6 +166,7 @@ async def get_route_risk(slug: str, db: AsyncSession = Depends(get_db)):
         weather_hours_old=round(weather.hours_old(), 1) if weather else None,
         weather_is_fresh=weather.is_fresh(12) if weather else False,
         latest_report=latest_report.condition_display if latest_report else None,
+        report_photo_url=f"/reports/{latest_report.id}/photo" if latest_report and latest_report.photo_url else None,
         report_hours_old=round(latest_report.hours_old(), 1) if latest_report else None,
         nearest_hospital_name=route.nearest_hospital_name,
         nearest_hospital_phone=route.nearest_hospital_phone,

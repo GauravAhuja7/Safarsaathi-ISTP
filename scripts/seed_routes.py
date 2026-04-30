@@ -11,12 +11,14 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "backend"))
 
+from datetime import date
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy import select, delete
 
 # Import models to register them with Base
 from app.models.route import Route, RouteBaseline
 from app.models.poi import POI
+from app.models.report import Reporter
 from app.db.session import Base
 from app.config import settings
 
@@ -135,6 +137,49 @@ ROUTES = [
     },
 ]
 
+DEMO_REPORTERS = [
+    {
+        "name": "Ramesh Sharma (Dhaba Owner)",
+        "phone": "+919805012345",
+        "role": "dhaba_owner",
+        "location_name": "Sharma Dhaba, Baggi Village",
+        "route_slug": "parashar",
+        "consent_given": True,
+    },
+    {
+        "name": "Mohan Taxi (Parashar Taxi Stand)",
+        "phone": "+919816098765",
+        "role": "taxi_driver",
+        "location_name": "Kataula Taxi Stand, Mandi",
+        "route_slug": "parashar",
+        "consent_given": True,
+    },
+    {
+        "name": "Suresh Homestay (Barot)",
+        "phone": "+919816011222",
+        "role": "homestay_owner",
+        "location_name": "Barot Village Homestay",
+        "route_slug": "barot",
+        "consent_given": True,
+    },
+    {
+        "name": "Ghatasani Taxi Driver",
+        "phone": "+919805099001",
+        "role": "taxi_driver",
+        "location_name": "Ghatasani, Barot route",
+        "route_slug": "barot",
+        "consent_given": True,
+    },
+    {
+        "name": "Pandoh Dhaba Owner",
+        "phone": "+919816055321",
+        "role": "dhaba_owner",
+        "location_name": "Pandoh Dam, NH-3",
+        "route_slug": "kullu-manali",
+        "consent_given": True,
+    },
+]
+
 UNIVERSAL_POIS = [
     {"name": "Ambulance", "category": "emergency", "phone": "108", "lat": None, "lon": None, "notes": "Universal ambulance service"},
     {"name": "Police", "category": "emergency", "phone": "100", "lat": None, "lon": None, "notes": "Universal police helpline"},
@@ -154,6 +199,7 @@ async def seed(db_url: str):
     async with async_session() as session:
         # Clear existing data (idempotent re-run)
         await session.execute(delete(POI))
+        await session.execute(delete(Reporter))
         await session.execute(delete(RouteBaseline))
         await session.execute(delete(Route))
         await session.commit()
@@ -202,9 +248,29 @@ async def seed(db_url: str):
                     notes=p["notes"],
                 ))
 
+        # Insert demo reporters (slug → route.id lookup)
+        slug_to_id: dict[str, int] = {}
+        route_result = await session.execute(select(Route))
+        for route_obj in route_result.scalars().all():
+            slug_to_id[route_obj.slug] = route_obj.id
+
+        for rep in DEMO_REPORTERS:
+            route_id = slug_to_id.get(rep["route_slug"])
+            session.add(Reporter(
+                name=rep["name"],
+                phone=rep["phone"],
+                role=rep["role"],
+                location_name=rep["location_name"],
+                route_id=route_id,
+                consent_given=rep["consent_given"],
+                consent_date=date.today() if rep["consent_given"] else None,
+                active=True,
+            ))
+
         await session.commit()
         print(f"✓ Seeded {len(ROUTES)} routes, {sum(len(r['baselines']) for r in ROUTES)} baselines, "
-              f"{sum(len(r['pois']) for r in ROUTES) + len(UNIVERSAL_POIS)} POIs")
+              f"{sum(len(r['pois']) for r in ROUTES) + len(UNIVERSAL_POIS)} POIs, "
+              f"{len(DEMO_REPORTERS)} reporters")
 
     await engine.dispose()
 

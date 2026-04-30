@@ -1,10 +1,12 @@
 from datetime import date, datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Header
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, desc
 from pydantic import BaseModel
+import httpx
 from app.db.session import get_db
-from app.models.report import Reporter
+from app.models.report import Reporter, ReporterReport
 from app.models.route import Route
 from app.config import settings
 
@@ -26,6 +28,7 @@ class ReporterCreate(BaseModel):
     latitude: float | None = None
     longitude: float | None = None
     route_slug: str
+    telegram_chat_id: int | None = None
     consent_given: bool = False
 
 
@@ -68,6 +71,7 @@ async def create_reporter(
         latitude=payload.latitude,
         longitude=payload.longitude,
         route_id=route.id,
+        telegram_chat_id=payload.telegram_chat_id,
         consent_given=payload.consent_given,
         consent_date=date.today() if payload.consent_given else None,
     )
@@ -109,3 +113,111 @@ async def add_strike(
     await db.commit()
     await db.refresh(reporter)
     return reporter
+
+
+# ── Public report submission (website + bots) ─────────────────────────────────
+
+class ReportSubmit(BaseModel):
+    route_slug: str
+    condition: str  # blocked | rough | clear | other
+    description: str | None = None
+    photo_url: str | None = None
+    submitted_by: str | None = None  # optional name for anonymous submitters
+    source: str = "website"
+
+
+class ReportOut(BaseModel):
+    id: int
+    route_slug: str
+    condition: str
+    description: str | None
+    photo_url: str | None
+    submitted_by: str | None
+    source: str
+    reported_at: datetime
+
+
+VALID_CONDITIONS = {"blocked", "rough", "clear", "other"}
+VALID_SOURCES = {"telegram", "whatsapp", "website", "admin"}
+
+
+@router.post("/reports", response_model=ReportOut, status_code=201)
+async def submit_report(payload: ReportSubmit, db: AsyncSession = Depends(get_db)):
+    if payload.condition not in VALID_CONDITIONS:
+        raise HTTPException(status_code=422, detail=f"condition must be one of {VALID_CONDITIONS}")
+
+    source = payload.source if payload.source in VALID_SOURCES else "website"
+
+    result = await db.execute(select(Route).where(Route.slug == payload.route_slug))
+    route = result.scalar_one_or_none()
+    if route is None:
+        raise HTTPException(status_code=404, detail=f"Route '{payload.route_slug}' not found")
+
+    report = ReporterReport(
+        reporter_id=None,
+        route_id=route.id,
+        condition=payload.condition,
+        description=payload.description,
+        photo_url=payload.photo_url,
+        submitted_by=payload.submitted_by,
+        source=source,
+    )
+    db.add(report)
+    await db.commit()
+    await db.refresh(report)
+
+    return ReportOut(
+        id=report.id,
+        route_slug=payload.route_slug,
+        condition=report.condition,
+        description=report.description,
+        photo_url=report.photo_url,
+        submitted_by=report.submitted_by,
+        source=report.source,
+        reported_at=report.reported_at,
+    )
+
+
+@router.get("/reports/{report_id}/photo")
+async def get_report_photo(report_id: int, db: AsyncSession = Depends(get_db)):
+    """Proxy the reporter photo so the bot token never reaches the browser."""
+    result = await db.execute(select(ReporterReport).where(ReporterReport.id == report_id))
+    report = result.scalar_one_or_none()
+    if report is None or not report.photo_url:
+        raise HTTPException(status_code=404, detail="Photo not found")
+
+    async def stream():
+        async with httpx.AsyncClient(timeout=15) as client:
+            async with client.stream("GET", report.photo_url) as r:
+                async for chunk in r.aiter_bytes(8192):
+                    yield chunk
+
+    return StreamingResponse(stream(), media_type="image/jpeg")
+
+
+@router.get("/reports")
+async def list_recent_reports(route_slug: str | None = None, limit: int = 20, db: AsyncSession = Depends(get_db)):
+    """List recent reports — used by admin dashboard and PWA."""
+    query = select(ReporterReport).order_by(desc(ReporterReport.reported_at)).limit(limit)
+    if route_slug:
+        route_result = await db.execute(select(Route).where(Route.slug == route_slug))
+        route = route_result.scalar_one_or_none()
+        if route:
+            query = query.where(ReporterReport.route_id == route.id)
+
+    result = await db.execute(query)
+    reports = result.scalars().all()
+    return [
+        {
+            "id": r.id,
+            "condition": r.condition,
+            "condition_display": r.condition_display,
+            "description": r.description,
+            "photo_url": r.photo_url,
+            "submitted_by": r.submitted_by,
+            "source": r.source,
+            "hours_old": round(r.hours_old(), 1),
+            "reported_at": r.reported_at,
+        }
+        for r in reports
+    ]

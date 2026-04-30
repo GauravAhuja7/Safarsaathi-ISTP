@@ -52,19 +52,44 @@ class TelegramClient:
                     {"command": "weather", "description": "Mandi weather summary"},
                     {"command": "checklist", "description": "Pre-trip preparation checklist"},
                     {"command": "emergency", "description": "Emergency numbers"},
+                    {"command": "report", "description": "Report road condition (photo/video supported)"},
                 ],
             },
         )
 
+    async def send_photo(self, chat_id: int | str, photo_url: str, caption: str = "") -> dict:
+        return await self._post(
+            "sendPhoto",
+            {"chat_id": chat_id, "photo": photo_url, "caption": caption[:1024]},
+        )
+
+    async def get_file(self, file_id: str) -> dict:
+        """Return Telegram file metadata including file_path."""
+        return await self._get("getFile", {"file_id": file_id})
+
+    def file_download_url(self, file_path: str) -> str:
+        """Construct the direct download URL for a Telegram file."""
+        token = self.base_url.split("/bot")[1]
+        return f"https://api.telegram.org/file/bot{token}/{file_path}"
+
+    async def get_file_url(self, file_id: str) -> str | None:
+        """Return public download URL for a file_id, or None on failure."""
+        try:
+            data = await self.get_file(file_id)
+            file_path = data["result"]["file_path"]
+            return self.file_download_url(file_path)
+        except Exception:
+            return None
+
     async def get_updates(self, offset: int | None = None, timeout: int = 25) -> list[dict]:
-        params = {"timeout": timeout, "allowed_updates": '["message"]'}
+        params = {"timeout": timeout, "allowed_updates": '["message","edited_message"]'}
         if offset is not None:
             params["offset"] = offset
         data = await self._get("getUpdates", params=params)
         return data["result"]
 
     async def set_webhook(self, url: str, secret_token: str | None = None) -> dict:
-        payload = {"url": url, "allowed_updates": ["message"]}
+        payload = {"url": url, "allowed_updates": ["message", "edited_message"]}
         if secret_token:
             payload["secret_token"] = secret_token
         return await self._post("setWebhook", payload)

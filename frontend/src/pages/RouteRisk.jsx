@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import RiskBadge from "../components/RiskBadge";
 import CallButton from "../components/CallButton";
@@ -25,17 +25,34 @@ export default function RouteRisk() {
   const cachedRisk = loadCache(slug);
   const [risk, setRisk] = useState(() => cachedRisk?.data || null);
   const [loading, setLoading] = useState(() => !cachedRisk);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastFetched, setLastFetched] = useState(null);
   const [offline, setOffline] = useState(() => Boolean(cachedRisk));
   const meta = ROUTE_META[slug] || {};
 
-  useEffect(() => {
-    const cached = loadCache(slug);
-
-    fetch(`/routes/${slug}/risk`, { signal: AbortSignal.timeout(5000) })
+  const fetchRisk = useCallback((manual = false) => {
+    if (manual) setRefreshing(true);
+    const url = manual
+      ? `/routes/${slug}/risk?_t=${Date.now()}`
+      : `/routes/${slug}/risk`;
+    fetch(url, { cache: "no-store", signal: AbortSignal.timeout(8000) })
       .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
-      .then((data) => { setRisk(data); saveCache(slug, data); setOffline(false); setLoading(false); })
-      .catch(() => { if (!cached) setLoading(false); });
+      .then((data) => {
+        setRisk(data);
+        saveCache(slug, data);
+        setOffline(false);
+        setLoading(false);
+        setRefreshing(false);
+        if (manual) setLastFetched(new Date());
+      })
+      .catch(() => { setLoading(false); setRefreshing(false); });
   }, [slug]);
+
+  useEffect(() => {
+    fetchRisk(false);
+    const interval = setInterval(() => fetchRisk(true), 40 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [fetchRisk]);
 
   const isMonsoon = [6,7,8,9].includes(new Date().getMonth() + 1);
 
@@ -97,15 +114,33 @@ export default function RouteRisk() {
 
         {/* Weather */}
         <div className="card">
-          <div className="section-label" style={{ padding: 0, marginBottom: 8 }}>मौसम / Weather — IMD Shimla</div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+            <div className="section-label" style={{ padding: 0 }}>मौसम / Weather — IMD Shimla</div>
+            <button
+              onClick={() => fetchRisk(true)}
+              disabled={refreshing}
+              style={{
+                background: "none", border: "1px solid #d1d5db", borderRadius: 6,
+                padding: "3px 10px", fontSize: "0.78rem", cursor: refreshing ? "not-allowed" : "pointer",
+                color: "#6b7280", display: "flex", alignItems: "center", gap: 4,
+              }}
+            >
+              <span style={{ display: "inline-block", animation: refreshing ? "spin 1s linear infinite" : "none" }}>⟳</span>
+              {refreshing ? "Updating…" : "Refresh"}
+            </button>
+          </div>
           {risk.weather_summary
             ? <p style={{ fontSize: "0.95rem" }}>{risk.weather_summary}</p>
             : <p className="text-muted">No weather data yet</p>}
-          {risk.weather_hours_old != null && (
-            <p className="text-muted mt-4" style={{ fontSize: "0.78rem" }}>
-              {risk.weather_is_fresh ? `✓ Updated ${risk.weather_hours_old}h ago` : `⚠ Data ${risk.weather_hours_old}h old — may be stale`}
-            </p>
-          )}
+          <p className="text-muted mt-4" style={{ fontSize: "0.78rem" }}>
+            {lastFetched
+              ? `✓ Updated just now (${lastFetched.toLocaleTimeString()})`
+              : risk.weather_hours_old != null
+                ? risk.weather_is_fresh
+                  ? `✓ Updated ${risk.weather_hours_old}h ago`
+                  : `⚠ Data ${risk.weather_hours_old}h old — may be stale`
+                : null}
+          </p>
         </div>
 
         {/* Local report */}
@@ -113,6 +148,13 @@ export default function RouteRisk() {
           <div className="card">
             <div className="section-label" style={{ padding: 0, marginBottom: 8 }}>स्थानीय रिपोर्ट / Local Report</div>
             <p style={{ fontSize: "0.95rem", fontWeight: 600 }}>{risk.latest_report}</p>
+            {risk.report_photo_url && (
+              <img
+                src={risk.report_photo_url}
+                alt="Reporter photo"
+                style={{ width: "100%", borderRadius: 8, marginTop: 10, objectFit: "cover", maxHeight: 240 }}
+              />
+            )}
             {risk.report_hours_old && (
               <p className="text-muted mt-4" style={{ fontSize: "0.78rem" }}>
                 {risk.report_hours_old < 2 ? "Very recent ✓"

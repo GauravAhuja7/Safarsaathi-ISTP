@@ -7,6 +7,7 @@ import Checklist from "./pages/Checklist";
 import Emergency from "./pages/Emergency";
 import AltitudePage from "./pages/Altitude";
 import MapPage from "./pages/Map";
+import Report from "./pages/Report";
 import "./styles/index.css";
 import "maplibre-gl/dist/maplibre-gl.css";
 
@@ -59,6 +60,7 @@ export default function App() {
         <Route path="/emergency/:routeSlug" element={<Emergency />} />
         <Route path="/altitude" element={<AltitudePage />} />
         <Route path="/map" element={<MapPage />} />
+        <Route path="/report" element={<Report />} />
       </Routes>
       <NavBar />
       <InstallBanner />

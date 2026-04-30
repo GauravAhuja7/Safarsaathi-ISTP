@@ -51,6 +51,7 @@ CREATE TABLE IF NOT EXISTS reporters (
     latitude DOUBLE PRECISION,
     longitude DOUBLE PRECISION,
     route_id INTEGER REFERENCES routes(id) ON DELETE SET NULL,
+    telegram_chat_id BIGINT UNIQUE,
     consent_given BOOLEAN NOT NULL DEFAULT FALSE,
     consent_date DATE,
     active BOOLEAN NOT NULL DEFAULT TRUE,
@@ -60,11 +61,13 @@ CREATE TABLE IF NOT EXISTS reporters (
 
 CREATE TABLE IF NOT EXISTS reporter_reports (
     id SERIAL PRIMARY KEY,
-    reporter_id INTEGER NOT NULL REFERENCES reporters(id) ON DELETE CASCADE,
+    reporter_id INTEGER REFERENCES reporters(id) ON DELETE CASCADE,
     route_id INTEGER NOT NULL REFERENCES routes(id) ON DELETE CASCADE,
     condition VARCHAR(20) NOT NULL CHECK (condition IN ('blocked', 'rough', 'clear', 'other')),
     description TEXT,
-    photo_url VARCHAR(255),
+    photo_url VARCHAR(500),
+    submitted_by VARCHAR(100),
+    source VARCHAR(20) NOT NULL DEFAULT 'unknown' CHECK (source IN ('telegram', 'whatsapp', 'website', 'admin', 'unknown')),
     reported_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

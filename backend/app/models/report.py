@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from sqlalchemy import Integer, String, Text, Boolean, Date, DateTime, ForeignKey, Double
+from sqlalchemy import BigInteger, Integer, String, Text, Boolean, Date, DateTime, ForeignKey, Double
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.session import Base
 
@@ -15,6 +15,7 @@ class Reporter(Base):
     latitude: Mapped[float | None] = mapped_column(Double)
     longitude: Mapped[float | None] = mapped_column(Double)
     route_id: Mapped[int | None] = mapped_column(ForeignKey("routes.id", ondelete="SET NULL"))
+    telegram_chat_id: Mapped[int | None] = mapped_column(BigInteger, unique=True)
     consent_given: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     consent_date: Mapped[datetime | None] = mapped_column(Date)
     active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
@@ -29,11 +30,13 @@ class ReporterReport(Base):
     __tablename__ = "reporter_reports"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    reporter_id: Mapped[int] = mapped_column(ForeignKey("reporters.id", ondelete="CASCADE"), nullable=False)
+    reporter_id: Mapped[int | None] = mapped_column(ForeignKey("reporters.id", ondelete="CASCADE"), nullable=True)
     route_id: Mapped[int] = mapped_column(ForeignKey("routes.id", ondelete="CASCADE"), nullable=False)
     condition: Mapped[str] = mapped_column(String(20), nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
-    photo_url: Mapped[str | None] = mapped_column(String(255))
+    photo_url: Mapped[str | None] = mapped_column(String(500))
+    submitted_by: Mapped[str | None] = mapped_column(String(100))
+    source: Mapped[str] = mapped_column(String(20), nullable=False, default="unknown")
     reported_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
 
     reporter: Mapped["Reporter"] = relationship(back_populates="reports")

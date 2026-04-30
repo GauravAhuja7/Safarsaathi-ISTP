@@ -124,7 +124,7 @@ export default function RouteList() {
           })}
         </div>
 
-        {/* WhatsApp CTA */}
+        {/* Quick access */}
         <div className="section">
           <div className="section-label">Quick access</div>
           <a
@@ -136,6 +136,14 @@ export default function RouteList() {
             <span style={{ fontSize: "1.5rem" }}>💬</span>
             <span>WhatsApp पर पूछें — "Parashar" भेजें</span>
           </a>
+          <Link
+            to="/report"
+            className="wa-cta"
+            style={{ background: "#1e3a5f", marginTop: 10 }}
+          >
+            <span style={{ fontSize: "1.5rem" }}>📢</span>
+            <span>रास्ते की जानकारी दें — Report road condition</span>
+          </Link>
         </div>
 
         {/* Season info strip */}

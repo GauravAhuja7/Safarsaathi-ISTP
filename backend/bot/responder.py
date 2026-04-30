@@ -19,6 +19,7 @@ from whatsapp.keywords import match_intent, match_route
 @dataclass
 class BotReply:
     text: str
+    photo_url: str | None = None
 
 
 def _plain(text: str) -> str:
@@ -112,11 +113,12 @@ async def route_reply(slug: str, db: AsyncSession) -> BotReply:
         hospital_name=route.nearest_hospital_name,
         hospital_phone=route.nearest_hospital_phone,
         reporter_contacts=[
-            {"name": r.name, "role": r.role, "phone": r.phone}
+            {"name": r.name, "role": r.role, "phone": r.phone, "location": r.location_name}
             for r in reporters
         ],
     )
-    return BotReply(_plain(text))
+    photo_url = latest_report.photo_url if latest_report else None
+    return BotReply(_plain(text), photo_url=photo_url)
 
 
 async def weather_reply(db: AsyncSession) -> BotReply:

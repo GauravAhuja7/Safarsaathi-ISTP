@@ -42,11 +42,16 @@ export default defineConfig({
     }),
   ],
   server: {
+    host: "0.0.0.0",
     proxy: {
       "/routes": "http://localhost:8000",
       "/weather": "http://localhost:8000",
       "/emergency": "http://localhost:8000",
       "/health": "http://localhost:8000",
+      "/reports": "http://localhost:8000",
+      "/reporters": "http://localhost:8000",
+      "/telegram": "http://localhost:8000",
+      "/webhook": "http://localhost:8000",
     },
   },
 });

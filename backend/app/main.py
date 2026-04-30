@@ -12,6 +12,7 @@ from app.scrapers.imd import scrape_imd_mandi
 from app.scrapers.sdma import scrape_sdma_alerts
 from app.scrapers.pwd import scrape_pwd_status
 from telegram import webhook as telegram_webhook
+from whatsapp import webhook as whatsapp_webhook
 
 logger = logging.getLogger(__name__)
 
@@ -66,9 +67,9 @@ async def lifespan(app: FastAPI):
 
     # Schedule to re-run every 6 hours
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(_run_imd, "interval", hours=6, id="imd_scraper")
-    scheduler.add_job(_run_sdma, "interval", hours=6, id="sdma_scraper")
-    scheduler.add_job(_run_pwd, "interval", hours=6, id="pwd_scraper")
+    scheduler.add_job(_run_imd, "interval", minutes=40, id="imd_scraper")
+    scheduler.add_job(_run_sdma, "interval", minutes=40, id="sdma_scraper")
+    scheduler.add_job(_run_pwd, "interval", minutes=40, id="pwd_scraper")
     scheduler.start()
 
     # Expose scheduler status so /health can read it
@@ -100,6 +101,7 @@ app.include_router(weather.router, tags=["Weather"])
 app.include_router(emergency.router, tags=["Emergency"])
 app.include_router(reporters.router, tags=["Reporters"])
 app.include_router(telegram_webhook.router, tags=["Telegram"])
+app.include_router(whatsapp_webhook.router, tags=["WhatsApp"])
 
 
 @app.get("/", tags=["Root"])

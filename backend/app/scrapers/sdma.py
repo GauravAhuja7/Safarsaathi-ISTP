@@ -26,9 +26,17 @@ HEADERS = {
 }
 
 # Keywords indicating a road/disaster alert relevant to mountain travel
-ROAD_BLOCK_KEYWORDS = ["road blocked", "road closed", "highway closed", "nh closed", "route blocked"]
-DISASTER_KEYWORDS = ["landslide", "flash flood", "flood warning", "red alert", "orange alert", "cloudburst"]
-MANDI_KEYWORDS = ["mandi", "parashar", "barot", "pandoh", "jogindernagar", "rewalsar"]
+ROAD_BLOCK_KEYWORDS = ["road blocked", "road closed", "highway closed", "nh closed", "route blocked", "traffic blocked"]
+DISASTER_KEYWORDS = ["landslide", "flash flood", "flood warning", "red alert", "orange alert", "cloudburst", "bridge damaged", "road washed"]
+MANDI_KEYWORDS = ["mandi", "parashar", "barot", "pandoh", "jogindernagar", "rewalsar", "sundernagar"]
+
+# Navigation/menu text that appears on SDMA website — must be rejected
+NAV_GARBAGE_PATTERNS = [
+    "citizen corner", "repository", "iec material", "safe construction",
+    "earthquake repository", "guidelines for", "safety tips", "home page",
+    "contact us", "about us", "sitemap", "press release list", "gallery",
+    "annual report", "relief manual", "ddma", "sdma act",
+]
 
 
 def _classify_alert(text: str) -> str:
@@ -73,12 +81,20 @@ async def scrape_sdma_alerts(db: AsyncSession) -> int:
         logger.error("SDMA scrape failed: %s", exc)
         return 0
 
-    # Filter for Mandi-relevant alerts
-    mandi_alerts = [
-        a for a in raw_alerts
-        if any(k in a["text"].lower() for k in MANDI_KEYWORDS)
-        or any(k in a["text"].lower() for k in DISASTER_KEYWORDS)
-    ]
+    # Filter for Mandi-relevant alerts — reject nav garbage first
+    mandi_alerts = []
+    for a in raw_alerts:
+        t = a["text"].lower()
+        # Reject navigation/menu text
+        if any(nav in t for nav in NAV_GARBAGE_PATTERNS):
+            continue
+        # Must have either a location keyword OR a disaster keyword AND be long enough to be real content
+        has_location = any(k in t for k in MANDI_KEYWORDS)
+        has_disaster = any(k in t for k in DISASTER_KEYWORDS + ROAD_BLOCK_KEYWORDS)
+        # Real alerts are usually sentences, not just keyword lists
+        is_sentence = len(a["text"].split()) >= 8
+        if has_disaster and (has_location or is_sentence):
+            mandi_alerts.append(a)
 
     if not mandi_alerts:
         logger.info("SDMA: no Mandi-relevant alerts found (this is normal outside monsoon)")

@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { apiUrl } from "../api";
 
 const ROUTES = [
   { slug: "parashar", label: "Parashar Lake", labelHi: "परासर झील" },
@@ -63,7 +64,7 @@ export default function Report() {
         source: "website",
       };
 
-      const res = await fetch("/reports", {
+      const res = await fetch(apiUrl("/reports"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

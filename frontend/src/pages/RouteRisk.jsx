@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { apiUrl } from "../api";
 import RiskBadge from "../components/RiskBadge";
 import CallButton from "../components/CallButton";
 import { ROUTE_META } from "../data/routes";
@@ -33,8 +34,8 @@ export default function RouteRisk() {
   const fetchRisk = useCallback((manual = false) => {
     if (manual) setRefreshing(true);
     const url = manual
-      ? `/routes/${slug}/risk?_t=${Date.now()}`
-      : `/routes/${slug}/risk`;
+      ? apiUrl(`/routes/${slug}/risk?_t=${Date.now()}`)
+      : apiUrl(`/routes/${slug}/risk`);
     fetch(url, { cache: "no-store", signal: AbortSignal.timeout(8000) })
       .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
       .then((data) => {

@@ -1,0 +1,19 @@
+app = "safarsaathi"
+primary_region = "bom"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+
+[[mounts]]
+  source = "safarsaathi_data"
+  destination = "/data"
+
+[env]
+  DATABASE_URL = "sqlite+aiosqlite:////data/safarsaathi.db"

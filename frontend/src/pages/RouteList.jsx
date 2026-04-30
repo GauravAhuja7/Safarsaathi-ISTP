@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import RiskBadge from "../components/RiskBadge";
+import { apiUrl } from "../api";
 import { ROUTE_META } from "../data/routes";
 
 // Static fallback — shown when backend is offline.
@@ -41,7 +42,7 @@ export default function RouteList() {
   useEffect(() => {
     const cached = loadCache();
 
-    fetch("/routes", { signal: AbortSignal.timeout(5000) })
+    fetch(apiUrl("/routes"), { signal: AbortSignal.timeout(5000) })
       .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
       .then((data) => {
         setRoutes(data);
